@@ -1,5 +1,6 @@
 (ns polynome.core
-  (:require [monome-serial.monome :as monome]))
+  (:require [monome-serial.monome    :as monome])
+  (:require [monome-serial.monome-at :as monome-at]))
 
 (def monomes (atom {}))
 
@@ -61,6 +62,12 @@
              y (range (range-y name))]
          [x y]))))
 
+(defn button-id
+  "Returns a unique integer id for a given set of coordinates for the specified or default monome"
+  ([x y] (button-id :default x y))
+  ([name x y]
+     (+ (* (range-y name) y) x)))
+
 (defn map-coords
   [monome x y]
   [x y])
@@ -80,9 +87,22 @@
      (let [m (fetch-monome name)]
        (monome/led-on m (map-coords m x y)))))
 
+(defn led-on-at
+  ([time x y] (led-on-at :default time x y))
+  ([name time x y]
+     (let [m (fetch-monome name)]
+       (monome-at/led-on-at m time (map-coords m x y)))))
+
 (defn led-off
   "Turns off the led of either the specified or default monome"
   ([x y] (led-off :default x y))
   ([name x y]
      (let [m (fetch-monome name)]
        (monome/led-off m (map-coords m x y)))))
+
+(defn on-press
+  "Register action-fn to be called when a button on the specified or default monome is pressed"
+  ([action-fn] (on-press :default action-fn))
+  ([name action-fn]
+     (let [m (fetch-monome name)]
+       (monome/on-press m action-fn))))
