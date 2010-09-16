@@ -1,15 +1,16 @@
 (ns polynome.core
-  (:use [clojure.contrib.ns-utils :only [immigrate]])
-  (:require  monome-serial.monome
-             monome-serial.monome-at))
+  (:require  [monome-serial.core :as monome-core]
+             [monome-serial.led :as monome]
+             [monome-serial.led-at :as monome-at]
+             monome-serial.event-handlers)
+  (:use [clojure.contrib.ns-utils :only [immigrate]]))
 
 (immigrate
- 'monome-serial.monome
- 'monome-serial.monome-at)
+ 'monome-serial.event-handlers)
 
 (defn init  "Initialise a monome. Raises an exception if the supplied path isn't valid or is already in use"
   [path]
-  (let [monome (connect path)]
+  (let [monome (monome-core/connect path)]
     (assoc monome ::polynome {:max-x 7
                               :max-y 7
                               :range-x 8
@@ -57,8 +58,53 @@
   [m x y]
   (+ (* (range-y m) y) x))
 
+;;TODO implement me
 (defn map-coords
-  [monome x y]
-  [x y])
+  ([m coords] (apply map-coords m coords))
+  ([m x y]
+     [x y]))
+
+(defn led-on
+  ([m coords]
+     (monome/led-on m (map-coords m coords)))
+  ([m x y]
+     (monome/led-on m (map-coords m x y))))
+
+(defn led-on-at
+  ([m time coords]
+     (monome-at/led-on-at m time (map-coords m coords)))
+  ([m time x y]
+     (monome-at/led-on-at m time (map-coords m x y))))
+
+(defn led-off
+  ([m coords]
+     (monome/led-off m (map-coords m coords)))
+  ([m x y]
+     (monome/led-off m (map-coords m x y))))
+
+(defn led-off-at
+  ([m time coords]
+     (monome-at/led-off-at m time (map-coords m coords)))
+  ([m time x y]
+     (monome-at/led-off-at m time (map-coords m x y))))
+
+;;TODO implement me
+(defn frame-rot
+  [m]
+  0)
+
+;;TODO implement me
+(defn rotate-frame
+  [rot row0 row1 row2 row3 row4 row5 row6 row7]
+  [row0 row1 row2 row3 row4 row5 row6 row7])
+
+;;TODO implement me
+(defn map-frame-idx
+  [m idx]
+  idx)
+
+(defn frame
+  ([m row0 row1 row2 row3 row4 row5 row6 row7]
+     (apply monome/frame m (rotate-frame (frame-rot m) row0 row1 row2 row3 row4 row5 row6 row7))))
 
 
