@@ -64,6 +64,23 @@
   ([m x y]
      [x y]))
 
+(defn clear
+  [m]
+  (monome/clear m))
+
+(defn clear-at
+  [m time]
+  (monome-at/clear-at m time))
+
+(defn all
+  [m]
+  (monome/all m))
+
+(defn all-at
+  [m time]
+  (monome-at/all-at m time))
+
+
 (defn led-on
   ([m coords]
      (monome/led-on m (map-coords m coords)))
@@ -106,5 +123,9 @@
 (defn frame
   ([m row0 row1 row2 row3 row4 row5 row6 row7]
      (apply monome/frame m (rotate-frame (frame-rot m) row0 row1 row2 row3 row4 row5 row6 row7))))
+
+(defn frame-at
+  ([m time row0 row1 row2 row3 row4 row5 row6 row7]
+     (apply monome-at/frame-at m time (rotate-frame (frame-rot m) row0 row1 row2 row3 row4 row5 row6 row7))))
 
 
