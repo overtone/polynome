@@ -49,9 +49,13 @@
 (defn coords
   "Returns a lazy sequence of all pairs of x y coords"
   [m]
-  (for [x (range (range-x m))
-        y (range (range-y m))]
+  (for [y (range (range-y m))
+        x (range (range-x m))]
     [x y]))
+
+(defn map->frame
+  [m mp]
+  (partition 8 (map #(get mp %) (coords m))))
 
 (defn button-id
   "Returns a unique integer id for a given set of coordinates."
