@@ -84,6 +84,25 @@
   [m time]
   (monome-at/all-at m time))
 
+(defn led
+  ([m coords val]
+     (if (= 0 val)
+       (monome/led-off m (map-coords m coords))
+       (monome/led-on m (map-coords m coords))))
+  ([m x y val]
+     (if (= 0 val)
+       (monome/led-off m (map-coords m x y))
+       (monome/led-on m (map-coords m x y)))))
+
+(defn led-at
+  ([m time coords val]
+     (if (= 0 val)
+       (monome-at/led-off-at m time (map-coords m coords))
+       (monome-at/led-on-at m time (map-coords m coords))))
+  ([m time x y val]
+     (if (= 0 val)
+       (monome-at/led-off-at m time (map-coords m x y))
+       (monome-at/led-on-at m time (map-coords m x y)))))
 
 (defn led-on
   ([m coords]
