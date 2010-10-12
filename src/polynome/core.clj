@@ -2,15 +2,34 @@
   (:require  [monome-serial.core :as monome-core]
              [monome-serial.led :as monome]
              [monome-serial.led-at :as monome-at]
-             monome-serial.event-handlers)
+             [monome-serial.event-handlers]
+             [polynome.ring-buffer :as ring])
   (:use [clojure.contrib.ns-utils :only [immigrate]]))
 
 (immigrate
  'monome-serial.event-handlers)
 
+;;event history
+(defrecord Event [time x y action monome-name])
+
+(def event-buf* (atom (ring/create-buf 1000)))
+
+(defn new-event
+  "Record a new event. Each event is a tuple of onset time, x and y coords, action (i.e. up, down) and monome name (or default if not supplied)."
+  ([x y action]
+     (new-event x y action :default))
+  ([x y action name]
+     (swap! event-buf* ring/insert (Event. (System/currentTimeMillis) x y action name))))
+
+(defn find-previous
+  "Returns the first event for which fun returns true or nil if no match is found."
+  [fun]
+  (some @event-buf* fun))
+
 (defn init  "Initialise a monome. Raises an exception if the supplied path isn't valid or is already in use"
   [path]
   (let [monome (monome-core/connect path)]
+    (on-action monome (fn [action x y] (new-event x y action)))
     (assoc monome ::polynome {:max-x 7
                               :max-y 7
                               :range-x 8
@@ -150,5 +169,6 @@
 (defn frame-at
   ([m time row0 row1 row2 row3 row4 row5 row6 row7]
      (apply monome-at/frame-at m time (rotate-frame (frame-rot m) row0 row1 row2 row3 row4 row5 row6 row7))))
+
 
 
