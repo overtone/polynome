@@ -44,7 +44,7 @@
   [ring]
   (nth-prev ring 1))
 
-(defn some
+(defn find-first
   "Returns the first value for which the fun returns true otherwise nil."
   [ring fun]
   (loop [num-back 0]

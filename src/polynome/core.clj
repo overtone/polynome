@@ -2,58 +2,81 @@
   (:require  [monome-serial.core :as monome-core]
              [monome-serial.led :as monome]
              [monome-serial.led-at :as monome-at]
-             [monome-serial.event-handlers]
-             [polynome.ring-buffer :as ring])
+             [monome-serial.event-handlers :as handlers]
+             [polynome.ring-buffer :as ringb])
   (:use [clojure.contrib.ns-utils :only [immigrate]]))
 
-(immigrate
- 'monome-serial.event-handlers)
+(defrecord Event [time x y action])
 
-;;event history
-(defrecord Event [time x y action monome-name])
+(def HISTORY-SIZE 1000)
 
-(def event-buf* (atom (ring/create-buf 1000)))
+(defn history
+  [m]
+  @(get-in m [::core :event-buf]))
 
-(defn new-event
-  "Record a new event. Each event is a tuple of onset time, x and y coords, action (i.e. up, down) and monome name (or default if not supplied)."
-  ([x y action]
-     (new-event x y action :default))
-  ([x y action name]
-     (swap! event-buf* ring/insert (Event. (System/currentTimeMillis) x y action name))))
-
-(defn find-previous
+(defn find-event
   "Returns the first event for which fun returns true or nil if no match is found."
-  [fun]
-  (some @event-buf* fun))
+  [m fun]
+  (ringb/find-first (history m) fun))
+
+(defn prev-event
+  [m x y action]
+  (find-event m #(and (= x (:x %))
+                      (= y (:y %))
+                      (= action (:action %)))))
+
+(defn on-press
+  ([m f] (on-press m f f))
+  ([m f name] (handlers/on-press m f ::user-defined name)))
+
+(defn on-release
+  ([m f] (on-release m f f))
+  ([m f name] (handlers/on-release m f ::user-defined name)))
+
+(defn remove-handler
+  [m name]
+  (handlers/remove-handler m ::user-defined name))
+
+(defn remove-all-handlers
+  [m]
+  (handlers/remove-group-handlers m ::user-defined))
 
 (defn init  "Initialise a monome. Raises an exception if the supplied path isn't valid or is already in use"
   [path]
-  (let [monome (monome-core/connect path)]
-    (on-action monome (fn [action x y] (new-event x y action)))
-    (assoc monome ::polynome {:max-x 7
-                              :max-y 7
-                              :range-x 8
-                              :range-y 8})))
+  (let [m      (monome-core/connect path)
+        hist   (ringb/create-buf HISTORY-SIZE)
+        poly-m (assoc m ::core {:max-x 7
+                                :max-y 7
+                                :range-x 8
+                                :range-y 8
+                                :event-buf (atom hist)})
+        store-event (fn [action x y]
+                      (let [event (Event. (System/currentTimeMillis) x y action)]
+                        (swap! (get-in poly-m [::core :event-buf])
+                               ringb/insert event)))]
+
+    (handlers/on-action poly-m store-event ::history "store press/release history")
+    poly-m))
 
 (defn max-x
   "Returns the monome's maximum x coord"
   [m]
-  (get-in m [::polynome :max-x]))
+  (get-in m [::core :max-x]))
 
 (defn max-y
   "Returns the monome's maximum y coord"
   [m]
-  (get-in m [::polynome :max-y]))
+  (get-in m [::core :max-y]))
 
 (defn range-x
   "Returns the number of buttons on the x axis"
   [m]
-  (get-in m [::polynome :range-x]))
+  (get-in m [::core :range-x]))
 
 (defn range-y
   "Returns the number of buttons on the y axis"
   [m]
-  (get-in m [::polynome :range-y]))
+  (get-in m [::core :range-y]))
 
 (defn rand-x
   "Returns a random x coordinate"
