@@ -12,36 +12,57 @@
   [m]
   @(get-in m [::core :button-state]))
 
-(defn history
-  [m]
-  (get (button-state m) :event-history))
-
 (defn find-event
   "Returns the first event for which fun returns true or nil if no match is found."
-  [m fun]
-  (find-first fun (history m)))
+  [bs f]
+  (find-first f (:event-history bs)))
 
 (defn prev-event
-  [m x y action]
-  (find-event m #(and (= x (:x %))
+  [bs x y action]
+  (find-event bs #(and (= x (:x %))
                       (= y (:y %))
                       (= action (:action %)))))
 
+(defn prev-press
+  [bs x y]
+  (prev-event bs x y :press))
+
+(defn prev-release
+  [bs x y]
+  (prev-event bs x y :release))
+
+(defn on-action
+  ([m f] (on-action m f f))
+  ([m f name] (swap! (get-in m [::core :callbacks]) conj [name f] )))
+
 (defn on-press
   ([m f] (on-press m f f))
-  ([m f name] (handlers/on-press m f ::user-defined name)))
+  ([m f name] (on-action m (fn [action x y state]
+                             (if (= :press action)
+                               (f x y state))))))
 
 (defn on-release
   ([m f] (on-release m f f))
-  ([m f name] (handlers/on-release m f ::user-defined name)))
+  ([m f name] (on-action m (fn [action x y state]
+                             (if (= :release action)
+                               (f x y state))))))
 
-(defn remove-handler
+(defn on-sustain
+  ([m f] (on-sustain m f f))
+  ([m f name]
+     (on-release m (fn [x y state]
+                     (let [press (prev-press state x y)
+                           release (prev-release state x y)
+                           time (- (:time release) (:time press))]
+                       (f x y time state))))))
+
+(defn remove-callback
   [m name]
-  (handlers/remove-handler m ::user-defined name))
+  (println "implement me!"))
 
-(defn remove-all-handlers
+(defn remove-all-callbacks
   [m]
-  (handlers/remove-group-handlers m ::user-defined))
+  (reset! (get-in m [::core :callbacks]) (list)))
 
 (defn init  "Initialise a monome. Raises an exception if the supplied path isn't valid or is already in use"
   [path]
@@ -54,21 +75,23 @@
                      x (range range-x)]
                  [x y])
 
-        hist (list)
+        history (list)
         led-activation    (into {} (map (fn [el] [el :inactive]) coords))
         button-activation (into {} (map (fn [el] [el :inactive]) coords))
         press-count       (into {} (map (fn [el] [el 0]) coords))
 
+        callbacks (atom (list))
         led-state    (atom led-activation)
-        button-state (atom {:event-history hist
+        button-state (atom {:event-history history
                             :button-activation button-activation
                             :led-activation led-activation
                             :press-count press-count})
 
-        poly-m (assoc m ::core {:max-x max-x
+         poly-m (assoc m ::core {:max-x max-x
                                 :max-y max-y
                                 :range-x range-x
                                 :range-y range-y
+                                :callbacks callbacks
                                 :coords coords
                                 :button-state button-state})
 
@@ -83,7 +106,8 @@
                                                    (assoc-in [:button-activation [x y]] :inactive)))))
 
         update-button-state-handler (fn [action x y]
-                                      (swap! button-state update-button-state action x y))]
+                                      (let [new-state (swap! button-state update-button-state action x y)]
+                                        (doseq [[_ callback] @callbacks] (callback action x y new-state))))]
 
     (handlers/on-action poly-m update-button-state-handler ::state "update monome state")
     poly-m))
