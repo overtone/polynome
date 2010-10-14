@@ -2,22 +2,24 @@
   (:require  [monome-serial.core :as monome-core]
              [monome-serial.led :as monome]
              [monome-serial.led-at :as monome-at]
-             [monome-serial.event-handlers :as handlers]
-             [polynome.ring-buffer :as ringb])
-  (:use [clojure.contrib.ns-utils :only [immigrate]]))
+             [monome-serial.event-handlers :as handlers])
+  (:use [clojure.contrib.ns-utils :only [immigrate]]
+        [clojure.contrib.seq-utils :only [find-first]]))
 
 (defrecord Event [time x y action])
 
-(def HISTORY-SIZE 1000)
+(defn button-state
+  [m]
+  @(get-in m [::core :button-state]))
 
 (defn history
   [m]
-  @(get-in m [::core :event-buf]))
+  (get (button-state m) :event-history))
 
 (defn find-event
   "Returns the first event for which fun returns true or nil if no match is found."
   [m fun]
-  (ringb/find-first (history m) fun))
+  (find-first fun (history m)))
 
 (defn prev-event
   [m x y action]
@@ -44,18 +46,46 @@
 (defn init  "Initialise a monome. Raises an exception if the supplied path isn't valid or is already in use"
   [path]
   (let [m      (monome-core/connect path)
-        hist   (ringb/create-buf HISTORY-SIZE)
-        poly-m (assoc m ::core {:max-x 7
-                                :max-y 7
-                                :range-x 8
-                                :range-y 8
-                                :event-buf (atom hist)})
-        store-event (fn [action x y]
-                      (let [event (Event. (System/currentTimeMillis) x y action)]
-                        (swap! (get-in poly-m [::core :event-buf])
-                               ringb/insert event)))]
+        max-x 7
+        max-y 7
+        range-x (inc max-x)
+        range-y (inc max-y)
+        coords (for [y (range range-y)
+                     x (range range-x)]
+                 [x y])
 
-    (handlers/on-action poly-m store-event ::history "store press/release history")
+        hist (list)
+        led-activation    (into {} (map (fn [el] [el :inactive]) coords))
+        button-activation (into {} (map (fn [el] [el :inactive]) coords))
+        press-count       (into {} (map (fn [el] [el 0]) coords))
+
+        led-state    (atom led-activation)
+        button-state (atom {:event-history hist
+                            :button-activation button-activation
+                            :led-activation led-activation
+                            :press-count press-count})
+
+        poly-m (assoc m ::core {:max-x max-x
+                                :max-y max-y
+                                :range-x range-x
+                                :range-y range-y
+                                :coords coords
+                                :button-state button-state})
+
+        update-button-state (fn [state action x y]
+                              (let [event (Event. (System/currentTimeMillis) x y action)
+                                    state (update-in state [:event-history] conj event)]
+                                (case action
+                                      :press (-> state
+                                                 (assoc-in [:button-activation [x y]] :active)
+                                                 (update-in [:press-count [x y]] inc))
+                                      :release (-> state
+                                                   (assoc-in [:button-activation [x y]] :inactive)))))
+
+        update-button-state-handler (fn [action x y]
+                                      (swap! button-state update-button-state action x y))]
+
+    (handlers/on-action poly-m update-button-state-handler ::state "update monome state")
     poly-m))
 
 (defn max-x
@@ -91,9 +121,7 @@
 (defn coords
   "Returns a lazy sequence of all pairs of x y coords"
   [m]
-  (for [y (range (range-y m))
-        x (range (range-x m))]
-    [x y]))
+  (get-in m [::core :coords]))
 
 (defn map->frame
   [m mp]
