@@ -62,7 +62,7 @@
 
 (defn remove-all-callbacks
   [m]
-  (reset! (get-in m [::core :callbacks]) (list)))
+  (reset! (get-in m [::core :callbacks]) []))
 
 (defn init  "Initialise a monome. Raises an exception if the supplied path isn't valid or is already in use"
   [path]
@@ -80,7 +80,7 @@
         button-activation (into {} (map (fn [el] [el :inactive]) coords))
         press-count       (into {} (map (fn [el] [el 0]) coords))
 
-        callbacks (atom (list))
+        callbacks (atom [])
         led-state    (atom led-activation)
         button-state (atom {:event-history history
                             :button-activation button-activation
