@@ -64,6 +64,12 @@
   [m]
   (reset! (get-in m [::core :callbacks]) []))
 
+
+(defn light-led-on-sustain
+  [m]
+  (on-press m (fn [x y s] (led-on m x y)) "light led on sustain on")
+  (on-release m (fn [x y s] (led-off m x y)) "light led on sustain off"))
+
 (defn init  "Initialise a monome. Raises an exception if the supplied path isn't valid or is already in use"
   [path]
   (let [m      (monome-core/connect path)
