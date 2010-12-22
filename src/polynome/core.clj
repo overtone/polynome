@@ -182,10 +182,24 @@
   [m mp]
   (partition 8 (map #(get mp %) (coords m))))
 
+(defn button-ids
+  "Returns a seq of unique integers - one for each button on the monome."
+  [m]
+  (range (* (range-x m) (range-y m))))
+
+(defn button-coords
+  "Returns a set of coordinates matchine the id passed in. id is an int in the range of 0..num-buttons.
+   This is the inverse of button-id"
+  [m id]
+  (let [y (int (/ id (range-x m)))
+        x (- id (* (range-x m) y))]
+    [x y]))
+
 (defn button-id
-  "Returns a unique integer id for a given set of coordinates."
-  [m x y]
-  (+ (* (range-y m) y) x))
+  "Returns a unique integer id for a given set of coordinates. This is the inverse of button-coords"
+  ([m coords] (button-id m (first coords) (second coords)))
+  ([m x y]
+     (+ (* (range-y m) y) x)))
 
 ;;TODO implement me
 (defn map-coords
