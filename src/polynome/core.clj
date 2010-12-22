@@ -8,6 +8,12 @@
 
 (defrecord Event [time x y action])
 
+(defn- arg-count
+  "Get the arity of a function."
+  [f]
+  (let [m (first (filter #(= "invoke" (.getName %)) (.getDeclaredMethods (class f))))
+        p (.getParameterTypes m)]
+    (alength p)))
 
 (defn button-state
   [m]
@@ -34,7 +40,9 @@
 
 (defn on-action
   ([m f] (on-action m f f))
-  ([m f name] (swap! (get-in m [::core :callbacks]) conj [name f] )))
+  ([m f name]
+     (let [fn:arity [f (arg-count f)]]
+       (swap! (get-in m [::core :callbacks]) conj [name fn:arity] ))))
 
 (defn on-press
   ([m f] (on-press m f f))
@@ -92,6 +100,12 @@
         :512l [32 16]
         :512p [16 32]))
 
+(defn- run-handler [[f arity] & args]
+  (try
+    (apply f (take arity args))
+    (catch Exception e
+      (println "Handler Exception - got args:" args) (with-out-str (.printStackTrace e)))))
+
 (defn init  "Initialise a monome. Raises an exception if the supplied path isn't valid or is already in use"
   ([path] (init path (detect-type path)))
   ([path type] (apply init (cons path (infer-range type))))
@@ -137,7 +151,7 @@
 
            update-button-state-handler (fn [action x y]
                                          (let [new-state (swap! button-state update-button-state action x y)]
-                                           (doseq [[_ callback] @callbacks] (callback action x y new-state))))]
+                                           (doseq [[_ callback] @callbacks] (run-handler callback action x y new-state))))]
 
        (handlers/on-action poly-m update-button-state-handler ::state "update monome state")
        poly-m)))
