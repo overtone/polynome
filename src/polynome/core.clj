@@ -156,6 +156,15 @@
        (handlers/on-action poly-m update-button-state-handler ::state "update monome state")
        poly-m)))
 
+(defn connected?
+  "Determines whether the given monome is connected"
+  [m]
+  (monome-core/connected? m))
+
+(defn disconnect
+  "Closes the monome comm port"
+  [m]
+  (monome-core/disconnect m))
 
 (defn max-x
   "Returns the monome's maximum x coord"
@@ -311,3 +320,7 @@
   (on-release m (fn [x y s] (led-off m x y)) "light led on sustain off"))
 
 
+(defn close
+ "Close the monome device and release the serial port."
+ [m]
+ ((:close m)))
