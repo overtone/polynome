@@ -66,7 +66,8 @@
 
 (defn init  "Initialise a monome. Raises an exception if the supplied path isn't valid or is already in use"
   [path]
-  (let [m      (monome-core/connect path)
+  (let [dummy? (= path "dummy")
+        m      (if dummy? {} (monome-core/connect path))
         max-x 7
         max-y 7
         range-x (inc max-x)
@@ -88,12 +89,13 @@
                             :press-count press-count})
 
          poly-m (assoc m ::core {:max-x max-x
-                                :max-y max-y
-                                :range-x range-x
-                                :range-y range-y
-                                :callbacks callbacks
-                                :coords coords
-                                :button-state button-state})
+                                 :max-y max-y
+                                 :range-x range-x
+                                 :range-y range-y
+                                 :callbacks callbacks
+                                 :coords coords
+                                 :button-state button-state
+                                 :dummy dummy?})
 
         update-button-state (fn [state action x y]
                               (let [event (Event. (System/currentTimeMillis) x y action)
@@ -109,8 +111,13 @@
                                       (let [new-state (swap! button-state update-button-state action x y)]
                                         (doseq [[_ callback] @callbacks] (callback action x y new-state))))]
 
-    (handlers/on-action poly-m update-button-state-handler ::state "update monome state")
+    (if-not dummy? (handlers/on-action poly-m update-button-state-handler ::state "update monome state"))
     poly-m))
+
+(defn dummy?
+  "Returns a boolean value denoting whether the monome is a dummy"
+  [m]
+  (get-in m [::core :dummy]))
 
 (defn max-x
   "Returns the monome's maximum x coord"
@@ -164,63 +171,79 @@
 
 (defn clear
   [m]
-  (monome/clear m))
+  (if-not (dummy? m)
+    (monome/clear m)))
 
 (defn clear-at
   [m time]
-  (monome-at/clear-at m time))
+  (if-not (dummy? m)
+    (monome-at/clear-at m time)))
 
 (defn all
   [m]
-  (monome/all m))
+  (if-not (dummy? m)
+    (monome/all m)))
 
 (defn all-at
   [m time]
-  (monome-at/all-at m time))
+  (if-not (dummy? m)
+    (monome-at/all-at m time)))
 
 (defn led
   ([m coords val]
-     (if (= 0 val)
-       (monome/led-off m (map-coords m coords))
-       (monome/led-on m (map-coords m coords))))
+     (if-not (dummy? m)
+       (if (= 0 val)
+         (monome/led-off m (map-coords m coords))
+         (monome/led-on m (map-coords m coords)))))
   ([m x y val]
-     (if (= 0 val)
-       (monome/led-off m (map-coords m x y))
-       (monome/led-on m (map-coords m x y)))))
+     (if-not (dummy? m)
+       (if (= 0 val)
+         (monome/led-off m (map-coords m x y))
+         (monome/led-on m (map-coords m x y))))))
 
 (defn led-at
   ([m time coords val]
-     (if (= 0 val)
-       (monome-at/led-off-at m time (map-coords m coords))
-       (monome-at/led-on-at m time (map-coords m coords))))
+     (if-not (dummy? m)
+       (if (= 0 val)
+         (monome-at/led-off-at m time (map-coords m coords))
+         (monome-at/led-on-at m time (map-coords m coords)))))
   ([m time x y val]
-     (if (= 0 val)
-       (monome-at/led-off-at m time (map-coords m x y))
-       (monome-at/led-on-at m time (map-coords m x y)))))
+     (if-not (dummy? m)
+       (if (= 0 val)
+         (monome-at/led-off-at m time (map-coords m x y))
+         (monome-at/led-on-at m time (map-coords m x y))))))
 
 (defn led-on
   ([m coords]
-     (monome/led-on m (map-coords m coords)))
+     (if-not (dummy? m)
+       (monome/led-on m (map-coords m coords))))
   ([m x y]
-     (monome/led-on m (map-coords m x y))))
+     (if-not (dummy? m)
+       (monome/led-on m (map-coords m x y)))))
 
 (defn led-on-at
   ([m time coords]
-     (monome-at/led-on-at m time (map-coords m coords)))
+     (if-not (dummy? m)
+       (monome-at/led-on-at m time (map-coords m coords))))
   ([m time x y]
-     (monome-at/led-on-at m time (map-coords m x y))))
+     (if-not (dummy? m)
+       (monome-at/led-on-at m time (map-coords m x y)))))
 
 (defn led-off
   ([m coords]
-     (monome/led-off m (map-coords m coords)))
+     (if-not (dummy? m)
+       (monome/led-off m (map-coords m coords))))
   ([m x y]
-     (monome/led-off m (map-coords m x y))))
+     (if-not (dummy? m)
+       (monome/led-off m (map-coords m x y)))))
 
 (defn led-off-at
   ([m time coords]
-     (monome-at/led-off-at m time (map-coords m coords)))
+     (if-not (dummy? m)
+       (monome-at/led-off-at m time (map-coords m coords))))
   ([m time x y]
-     (monome-at/led-off-at m time (map-coords m x y))))
+     (if-not (dummy? m)
+       (monome-at/led-off-at m time (map-coords m x y)))))
 
 ;;TODO implement me
 (defn frame-rot
@@ -239,11 +262,13 @@
 
 (defn frame
   ([m row0 row1 row2 row3 row4 row5 row6 row7]
-     (apply monome/frame m (rotate-frame (frame-rot m) row0 row1 row2 row3 row4 row5 row6 row7))))
+     (if-not (dummy? m)
+       (apply monome/frame m (rotate-frame (frame-rot m) row0 row1 row2 row3 row4 row5 row6 row7)))))
 
 (defn frame-at
   ([m time row0 row1 row2 row3 row4 row5 row6 row7]
-     (apply monome-at/frame-at m time (rotate-frame (frame-rot m) row0 row1 row2 row3 row4 row5 row6 row7))))
+     (if-not (dummy? m)
+       (apply monome-at/frame-at m time (rotate-frame (frame-rot m) row0 row1 row2 row3 row4 row5 row6 row7)))))
 
 
 (defn light-led-on-sustain
