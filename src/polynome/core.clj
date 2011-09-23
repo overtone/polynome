@@ -1,9 +1,7 @@
 (ns polynome.core
   (:require  [monome-serial.core :as monome-core]
              [monome-serial.led :as monome]
-             [monome-serial.event-handlers :as handlers])
-  (:use [clojure.contrib.ns-utils :only [immigrate]]
-        [clojure.contrib.seq-utils :only [find-first]]))
+             [monome-serial.event-handlers :as handlers]))
 
 (defrecord Event [time x y action])
 
@@ -383,7 +381,7 @@
   "Returns the first event for which fn f returns true or nil if no match is
   found."
   [bs f]
-  (find-first f (:event-history bs)))
+  (first (filter f (:event-history bs))))
 
 (defn prev-event
   [bs x y action]
