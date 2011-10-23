@@ -344,7 +344,7 @@
   "Turn on monome m's led at coordinate x y"
   [m x y]
   (apply led-on* m (map-coords m x y))
-  :led-illluminated)
+  :led-illuminated)
 
 (defn led-off
   "Turn off monome m's led at coordinate x y"
@@ -352,10 +352,25 @@
   (apply led-off* m (map-coords m x y))
   :led-extinguished)
 
+(defn- valid-frame-row?
+  "A frame row is valid if it's sequential and it's count is the same as the
+  monome's range."
+  [m row]
+  (and (sequential? row)
+       (= (count row) (range-x m))
+       (every? #(or (= 1 %)
+                    (= 0 %))
+               row)))
+
+(defn- ensure-frame-rows-valid!
+  [m rows]
+  (when-not (every? #(valid-frame-row? m %) rows)
+    (throw (Exception. (str "invalid frame row send to frame: " rows)))))
 
 (defn frame
   ([m row0 row1 row2 row3 row4 row5 row6 row7] (frame m 0 row0 row1 row2 row3 row4 row5 row6 row7))
   ([m idx row0 row1 row2 row3 row4 row5 row6 row7]
+     (ensure-frame-rows-valid! m [row0 row1 row2 row3 row4 row5 row6 row7])
      (send (state-agent m) update-frame-state m idx row0 row1 row2 row3 row4 row5 row6 row7)
      :frame-updated))
 
@@ -577,8 +592,8 @@
            m                           (if dummy? {} (monome-core/connect path))
            max-x                       (dec n-cols)
            max-y                       (dec n-rows)
-           range-x                     (inc max-x)
-           range-y                     (inc max-y)
+           range-x                     n-cols
+           range-y                     n-rows
            coords                      (for [y (range range-y)
                                              x (range range-x)]
                                          [x y])
