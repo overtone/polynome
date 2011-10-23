@@ -55,10 +55,10 @@
   @(state-agent m))
 
 (defn led-state
-  "Returns a map of the current state of the leds (0 for off and 1 for on) for
-  all monome m's coords"
+  "Returns a sorted map of the current state of the leds (0 for off and 1 for
+  on) for all monome m's coords"
   [m]
-  (:led-activation (state m)))
+  (into (sorted-map) (:led-activation (state m))))
 
 (defn button-state
   "Returns a map of the current state of all the buttons (whether pressed or
