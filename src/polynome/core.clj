@@ -159,6 +159,24 @@
 
     state))
 
+(defn swap-col-led-state
+  [state m y-idx vals]
+  (let [led-state   (:led-activation state)
+        vals        (map (fn [el] (if (= 0 el) 0 1)) vals)
+        coords-vals (for [x (rows m)] [[y-idx x] (nth vals x 0)])
+        led-state   (reduce (fn [l-state [[x y] val]] (assoc l-state [x y] val))
+                            led-state
+                            coords-vals)
+        state       (assoc state :led-activation led-state)]
+
+    (when-not (dummy? m)
+      (doall (map (fn [[[x y] val]] (if (= 0 val)
+                                   (monome/led-off m x y)
+                                   (monome/led-on m x y)))
+                  coords-vals)))
+
+    state))
+
 (defn mk-coords-map
   [m idx rows]
   (into {}
@@ -299,6 +317,13 @@
   ;;FIXME: shouldn't reverse vals here - need to sort out rotation
   [m idx vals]
   (send (state-agent m) swap-row-led-state m idx (reverse vals)))
+
+(defn col
+  "Change the state of monome m's col at idx to the value of the supplied
+  seq where 0 is off 1 (or any other value) is on"
+  ;;FIXME: shouldn't reverse vals here - need to sort out rotation
+  [m idx vals]
+  (send (state-agent m) swap-col-led-state m idx (reverse vals)))
 
 (defn led
   "Change the state of monome m's led at coordinate x y to either on or off
