@@ -488,26 +488,37 @@
 
 (def MONOME-KINDS
   {
-   :64n   [[8   8] :north]
-   :64e   [[8   8] :east]
-   :64s   [[8   8] :south]
-   :64w   [[8   8] :west]
-   :128ln [[16  8] :north]
-   :128ls [[16  8] :south]
-   :128pw [[8  16] :west]
-   :128pe [[8  16] :east]
-   :256n  [[16 16] :north]
-   :256e  [[16 16] :east]
-   :256s  [[16 16] :south]
-   :256w  [[16 16] :west]})
+   :64n       [[8   8] :north]
+   :64e       [[8   8] :east]
+   :64s       [[8   8] :south]
+   :64w       [[8   8] :west]
+   :128ln     [[16  8] :north]
+   :128ls     [[16  8] :south]
+   :128pw     [[8  16] :west]
+   :128pe     [[8  16] :east]
+   :256n      [[16 16] :north]
+   :256e      [[16 16] :east]
+   :256s      [[16 16] :south]
+   :256w      [[16 16] :west]
+   :dummy64   [[8   8] :north]
+   :dummy128l [[16  8] :north]
+   :dummy128p [[8  16] :west]
+   :dummy256  [[8   8] :north]
+   })
 
-(defn- detect-type
+(defn- detect-kind
   [path]
   (condp re-find path
-    #"-m64-"  :64n
-    #"-m128-" :128ln
-    #"-m256-" :256n
-    :64))
+    #"-m64-"      :64n
+    #"-m128-"     :128ln
+    #"-m256-"     :256n
+    #"dummy64"    :dummy64
+    #"dummy128"   :dummy128l
+    #"dummy128l"  :dummy128l
+    #"dummy128p"  :dummy128p
+    #"dummy256"   :dummy256
+    #"dummy"      :dummy64
+    :unknown))
 
 (defn- monome-info
   [kind]
@@ -524,7 +535,7 @@
       (println "Handler Exception - got args:" [action x y state]) (with-out-str (.printStackTrace e)))))
 
 
-(defn- update-button-state
+(defn update-button-state
   "Given a monome's state, a new button action and the coordinates for the
   target of that action returns a new state representing the application of that
   action to the target. Also calls all callbacks with the new state."
@@ -542,12 +553,25 @@
     state))
 
 (defn init
-  "Initialise a monome. Raises an exception if the supplied path isn't valid or
-   is already in use"
-  ([path] (init path (detect-type path)))
-  ([path kind] (let [[[n-cols n-rows] cable] (monome-info (detect-type path))]
+  "Initialise a monome. When passed only a path, will attempt to infer the kind
+  of monome from the pathname. Where this isn't possible, you can either specify
+  the kind as a keyword (64n, 128pw , 256s etc. where the number represents the
+  number of buttons on the specific monome and the letters represent the cable
+  position n,e,s,w and orientation for 128 monomes - p and l for portrait and
+  landscape).
+
+  It is also possible to explicitly specify the kind, cable orientation (:north
+  :east :south or :west) and num cols and rows.
+
+  If you use one of the :dummy kinds then polynome won't attempt to connect to
+  a physical monome - allowing for mocking and testing when a real connection
+  isn't feasible.
+
+  Raises an exception if the supplied path isn't valid or is already in use"
+  ([path] (init path (detect-kind path)))
+  ([path kind] (let [[[n-cols n-rows] cable] (monome-info kind)]
                  (init path kind cable n-cols n-rows)))
-  ([path kind cable  n-cols n-rows]
+  ([path kind cable n-cols n-rows]
      (let [
            dummy?                      (= path "dummy")
            m                           (if dummy? {} (monome-core/connect path))
@@ -578,10 +602,17 @@
                                                         :coords coords
                                                         :state state
                                                         :dummy dummy?
-                                                        :kind kind})
+                                                        :kind kind
+                                                        :path path
+                                                        :cable cable})
 
            update-button-state-handler (fn [action x y]
                                          (send state update-button-state callbacks action x y))]
 
        (if-not dummy? (handlers/on-action poly-m update-button-state-handler ::state "update monome state"))
-       poly-m)))
+       (with-meta poly-m {:type ::polynome}))))
+
+(defmethod print-method ::polynome [p w]
+  (let [p (get p ::core)]
+      (.write w (format "#<polynome: kind[%s] cable[%s] path[%s] dummy?[%s]>" (:kind p) (:cable p) (:path p) (:dummy p))))
+)
