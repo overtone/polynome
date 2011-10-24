@@ -1,10 +1,27 @@
-# Polynome
+                   ____________________
+                  /                   /
+              ___/ o  o  o  o  o  o  /
+             /  /                   /
+         ___/  /  o  o  o  o  o  o /
+        /  /  /___________________/
+       /  /  o  o  o  o  o  o  /
+      /  /____________________/ , __       _
+     /  o  o  o  o  o  o   /   /|/  \     | |
+    /_____________________/     |___/ __  | |        _  _    __   _  _  _    _
+                                |    /  \_|/  |   | / |/ |  /  \_/ |/ |/ |  |/
+                                |    \__/ |__/ \_/|/  |  |_/\__/   |  |  |_/|__/
+                                                 /|
+                                                 \|
 
-Build the monome apps of your dreams. Allow them to intertwine and sparkle together.
+
+
+
+
+Build monome apps that can intertwine and sparkle together.
 
 ## Dependencies
 
-* [Clojure 1.2](http://clojure.org)
+* [Clojure 1.3](http://clojure.org)
 * [monome-serial](http://github/samaaron/monome-serial)
 
 ## Installation
