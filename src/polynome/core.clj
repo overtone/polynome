@@ -369,8 +369,8 @@
 
 (defn light-led-on-sustain
   [m]
-  (on-press m (fn [x y s] (poly/led-on m x y)) "light led on sustain on")
-  (on-release m (fn [x y s] (poly/led-off m x y)) "light led on sustain off")
+  (on-press m "light led on sustain on" (fn [x y s] (led-on m x y)))
+  (on-release m "light led on sustain off" (fn [x y s] (led-off m x y)))
   :led-sustain-handler-registered)
 
 (defn event-history
