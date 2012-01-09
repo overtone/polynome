@@ -24,16 +24,6 @@ Build monome apps that can intertwine and sparkle together.
 * [Clojure 1.3](http://clojure.org)
 * [grid](https://github.com/overtone/grid)
 
-## Installation
-
-Clone into a dir on your machine:
-
-    git clone git://github.com/samaaron/polynome.git
-
-Next you need to pull in the dependencies. The easiest way is to use [cake](http://clojure-cake.org/) as it handles the native dependencies within `monome-serial`'s deps  effortlessly:
-
-    cake deps
-
 ## Contributors
 
 * Sam Aaron
