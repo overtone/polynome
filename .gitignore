@@ -6,3 +6,4 @@ classes
 native
 \#*#
 \.\#*
+.lein-failures
