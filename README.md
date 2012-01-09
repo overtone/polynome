@@ -22,7 +22,7 @@ Build monome apps that can intertwine and sparkle together.
 ## Dependencies
 
 * [Clojure 1.3](http://clojure.org)
-* [monome-serial](http://github/samaaron/monome-serial)
+* [grid](https://github.com/overtone/grid)
 
 ## Installation
 
@@ -37,6 +37,7 @@ Next you need to pull in the dependencies. The easiest way is to use [cake](http
 ## Contributors
 
 * Sam Aaron
+* Philip Potter
 
 ## License
 
