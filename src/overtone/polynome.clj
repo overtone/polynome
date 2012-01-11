@@ -83,14 +83,14 @@
   "Resets the led state to all off"
   [state m]
   (let [state (assoc state :led-activation (empty-led-map (coords m)))]
-    (grid/clear-all-leds (device m))
+    (grid/set-all-leds (device m) 0)
     state))
 
 (defn- illuminate-all-led-state
   "Resets the led state to all on"
   [state m]
   (let [state (assoc state :led-activation (all-lit-led-map (coords m)))]
-    (grid/illuminate-all-leds (device m))
+    (grid/set-all-leds (device m) 1)
     state))
 
 (defn- toggle-all-led-state
@@ -99,9 +99,8 @@
   (let [led-state (:led-activation state)
         led-state (into {} (map (fn [[k v]] [k (toggle-led-activation v)]) led-state))
         state (assoc state :led-activation led-state)]
-    (doall (map (fn [[[x y] led]] (if (= 1 led)
-                                   (grid/led-on (device m) x y)
-                                   (grid/led-off (device m) x y)))
+    (doall (map (fn [[[x y] led]]
+                  (grid/led-set (device m) x y led))
                 led-state))
     state))
 
@@ -116,8 +115,8 @@
                       :led-off (-> state
                                    (assoc-in [:led-activation [x y]] 0)))]
     (case action
-      :led-on (grid/led-on (device m) x y)
-      :led-off (grid/led-off (device m) x y))
+      :led-on (grid/led-set (device m) x y 1)
+      :led-off (grid/led-set (device m) x y 0))
     state))
 
 (defn- toggle-led-state
@@ -125,10 +124,7 @@
   (let [led-state     (get (:led-activation state) [x y])
         new-led-state (toggle-led-activation led-state)
         state         (assoc-in state [:led-activation [x y]] new-led-state)]
-
-    (case new-led-state
-      1 (grid/led-on (device m) x y)
-      0 (grid/led-off (device m) x y))
+    (grid/led-set (device m) x y new-led-state)
     state))
 
 (declare cols)
@@ -144,9 +140,8 @@
                             coords-vals)
         state       (assoc state :led-activation led-state)]
 
-    (doall (map (fn [[[x y] val]] (if (= 0 val)
-                                   (grid/led-off (device m) x y)
-                                   (grid/led-on (device m) x y)))
+    (doall (map (fn [[[x y] val]]
+                  (grid/led-set (device m) x y val))
                 coords-vals))
 
     state))
@@ -161,9 +156,8 @@
                             coords-vals)
         state       (assoc state :led-activation led-state)]
 
-    (doall (map (fn [[[x y] val]] (if (= 0 val)
-                                   (grid/led-off (device m) x y)
-                                   (grid/led-on (device m) x y)))
+    (doall (map (fn [[[x y] val]]
+                  (grid/led-set (device m) x y val))
                 coords-vals))
 
     state))
