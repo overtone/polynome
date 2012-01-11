@@ -184,17 +184,6 @@
     (apply grid/led-frame (device m) idx (apply rotate-frame (frame-rot m) rows))
     state))
 
-(defn connected?
-  "Determines whether the given monome is connected"
-  [m]
-  (grid/is-connected? (device m)))
-
-(defn disconnect
-  "Closes the monome comm port"
-  [m]
-  (grid/disconnect (device m))
-  :disconnected)
-
 (defn range-x
   "Returns the number of buttons on the x axis"
   [m]
