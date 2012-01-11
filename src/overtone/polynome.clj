@@ -93,7 +93,7 @@
     (grid/set-all-leds (device m) 1)
     state))
 
-(defn- refresh-leds [m led-state]
+(defn- refresh-some-leds [m led-state]
   (dorun (map (fn [[[x y] led]]
                 (grid/led-set (device m) x y led))
               led-state)))
@@ -104,11 +104,11 @@
   (let [led-state (:led-activation state)
         led-state (into {} (map (fn [[k v]] [k (toggle-led-activation v)]) led-state))
         state (assoc state :led-activation led-state)]
-    (refresh-leds m led-state)
+    (refresh-some-leds m led-state)
     state))
 
 (defn- update-led-state
-  "Given a monome's state, a new led action adn the coordinates for the target
+  "Given a monome's state, a new led action and the coordinates for the target
   of that action returns aa new state representing the application of that action
   to the target"
   [state m action x y]
@@ -143,10 +143,7 @@
                             coords-vals)
         state       (assoc state :led-activation led-state)]
 
-    (doall (map (fn [[[x y] val]]
-                  (grid/led-set (device m) x y val))
-                coords-vals))
-
+    (refresh-some-leds m coords-vals)
     state))
 
 (defn swap-col-led-state
@@ -159,10 +156,7 @@
                             coords-vals)
         state       (assoc state :led-activation led-state)]
 
-    (doall (map (fn [[[x y] val]]
-                  (grid/led-set (device m) x y val))
-                coords-vals))
-
+    (refresh-some-leds m coords-vals)
     state))
 
 (defn mk-coords-map
