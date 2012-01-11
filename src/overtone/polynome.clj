@@ -159,14 +159,16 @@
         (apply concat
                (map-indexed (fn [y row]
                               (map-indexed (fn [x val]
-                                             [(map-coords m x y idx) val]) row)) rows))))
+                                             [(map-coords m x y idx) val])
+                                           row))
+                            rows))))
 
 (defn update-frame-state
   [state m idx & rows]
   (let [led-state (:led-activation state)
         new-led-state (merge led-state (mk-coords-map m idx rows))
         state (assoc state :led-activation new-led-state)]
-    (grid/led-frame (device m) new-led-state)
+    (refresh-all-leds! m new-led-state)
     state))
 
 (defn range-x
@@ -219,10 +221,6 @@
   [m]
   (range 0 (range-y m)))
 
-(defn map->frame
-  [m mp]
-  (partition 8 (map #(get mp %) (coords m))))
-
 (defn button-ids
   "Returns a seq of unique integers - one for each button on the monome."
   [m]
@@ -274,16 +272,14 @@
 (defn row
   "Change the state of monome m's row at idx to the value of the supplied
   seq where 0 is off 1 (or any other value) is on"
-  ;;FIXME: shouldn't reverse vals here - need to sort out rotation
   [m idx vals]
-  (send (state-agent m) swap-row-led-state m idx (reverse vals)))
+  (send (state-agent m) swap-row-led-state m idx vals))
 
 (defn col
   "Change the state of monome m's col at idx to the value of the supplied
   seq where 0 is off 1 (or any other value) is on"
-  ;;FIXME: shouldn't reverse vals here - need to sort out rotation
   [m idx vals]
-  (send (state-agent m) swap-col-led-state m idx (reverse vals)))
+  (send (state-agent m) swap-col-led-state m idx vals))
 
 (defn led
   "Change the state of monome m's led at coordinate x y to either on or off
