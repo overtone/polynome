@@ -93,41 +93,36 @@
     (grid/set-all-leds (device m) 1)
     state))
 
+(defn- refresh-all-leds! [m led-state]
+  (grid/led-frame (device m) led-state))
+
 (defn- refresh-some-leds! [m led-state]
   (doseq [[[x y] led] led-state]
     (grid/led-set (device m) x y led)))
 
 (defn- toggle-all-led-state
-  "Toggle's the led state"
+  "Toggles the led state"
   [state m]
   (let [led-state (:led-activation state)
         led-state (into {} (map (fn [[k v]] [k (toggle-led-activation v)]) led-state))
         state (assoc state :led-activation led-state)]
-    (refresh-some-leds! m led-state)
+    (refresh-all-leds! m led-state)
     state))
 
 (defn- update-led-state
-  "Given a monome's state, a new led action and the coordinates for the target
-  of that action returns a new state representing the application of that action
-  to the target"
-  [state m action x y]
-  (let [state   (case action
-                      :led-on (-> state
-                                  (assoc-in [:led-activation [x y]] 1))
-                      :led-off (-> state
-                                   (assoc-in [:led-activation [x y]] 0)))]
-    (case action
-      :led-on (grid/led-set (device m) x y 1)
-      :led-off (grid/led-set (device m) x y 0))
+  "Given a monome's state, a new led colour index and the coordinates
+  for the target of that action returns a new state representing the
+  application of that action to the target"
+  [state m colour x y]
+  (let [state   (assoc-in state [:led-activation [x y]] colour)]
+    (grid/led-set (device m) x y colour)
     state))
 
 (defn- toggle-led-state
   [state m x y]
   (let [led-state     (get (:led-activation state) [x y])
-        new-led-state (toggle-led-activation led-state)
-        state         (assoc-in state [:led-activation [x y]] new-led-state)]
-    (grid/led-set (device m) x y new-led-state)
-    state))
+        new-led-state (toggle-led-activation led-state)]
+    (update-led-state state m new-led-state x y)))
 
 (declare cols)
 (declare rows)
@@ -520,4 +515,6 @@
     (with-meta poly-m {:type ::polynome})))
 
 (defmethod print-method ::polynome [p w]
-  (.write w (format "#<polynome: dimensions%s>" (grid/dimensions (device p)))))
+  (.write w "#<polynome: grid:")
+  (print-method (device p) w)
+  (.write w ">"))
