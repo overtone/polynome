@@ -262,12 +262,12 @@
 (defn- led-on*
   "actually lights the monome!"
   [m x y]
-  (send (state-agent m) update-led-state m :led-on x y))
+  (send (state-agent m) update-led-state m 1 x y))
 
 (defn- led-off*
   "actually lights the monome!"
   [m x y]
-  (send (state-agent m) update-led-state m :led-off x y))
+  (send (state-agent m) update-led-state m 0 x y))
 
 (defn row
   "Change the state of monome m's row at idx to the value of the supplied
