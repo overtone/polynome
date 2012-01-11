@@ -166,7 +166,7 @@
   (let [led-state (:led-activation state)
         new-led-state (merge led-state (mk-coords-map m idx rows))
         state (assoc state :led-activation new-led-state)]
-    (apply grid/led-frame (device m) idx (apply rotate-frame (frame-rot m) rows))
+    (grid/led-frame (device m) new-led-state)
     state))
 
 (defn range-x
