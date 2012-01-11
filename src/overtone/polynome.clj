@@ -93,15 +93,18 @@
     (grid/set-all-leds (device m) 1)
     state))
 
+(defn- refresh-leds [m led-state]
+  (dorun (map (fn [[[x y] led]]
+                (grid/led-set (device m) x y led))
+              led-state)))
+
 (defn- toggle-all-led-state
   "Toggle's the led state"
   [state m]
   (let [led-state (:led-activation state)
         led-state (into {} (map (fn [[k v]] [k (toggle-led-activation v)]) led-state))
         state (assoc state :led-activation led-state)]
-    (doall (map (fn [[[x y] led]]
-                  (grid/led-set (device m) x y led))
-                led-state))
+    (refresh-leds m led-state)
     state))
 
 (defn- update-led-state
@@ -131,10 +134,10 @@
 (declare rows)
 
 (defn swap-row-led-state
-  [state m x-idx vals]
+  [state m y-idx vals]
   (let [led-state   (:led-activation state)
         vals        (map (fn [el] (if (= 0 el) 0 1)) vals)
-        coords-vals (for [y (cols m)] [[x-idx y] (nth vals y 0)])
+        coords-vals (for [x (cols m)] [[x y-idx] (nth vals x 0)])
         led-state   (reduce (fn [l-state [[x y] val]] (assoc l-state [x y] val))
                             led-state
                             coords-vals)
@@ -147,10 +150,10 @@
     state))
 
 (defn swap-col-led-state
-  [state m y-idx vals]
+  [state m x-idx vals]
   (let [led-state   (:led-activation state)
         vals        (map (fn [el] (if (= 0 el) 0 1)) vals)
-        coords-vals (for [x (rows m)] [[y-idx x] (nth vals x 0)])
+        coords-vals (for [y (rows m)] [[x-idx y] (nth vals y 0)])
         led-state   (reduce (fn [l-state [[x y] val]] (assoc l-state [x y] val))
                             led-state
                             coords-vals)
